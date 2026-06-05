@@ -1,12 +1,24 @@
-/***********************
- *** Leaflet Plugins ***
- ***********************/
+import L from 'leaflet';
+
+declare module 'leaflet' {
+    interface LayerGroup {
+        unbindAllPopups(): void;
+        bindAllPopups(popupOptions?: any): void;
+    }
+    interface Layer {
+        moveMarker(latlng: L.LatLngExpression): void;
+        getMarkerLatLng(): L.LatLng | undefined;
+    }
+}
 
 /*** Additions to the Layer Group Class ***/
+// @ts-ignore
 L.LayerGroup.include({
     // Unbinding all popups.
-    unbindAllPopups: function () {
+    unbindAllPopups: function (this: L.LayerGroup) {
+        // @ts-ignore
         for (let superLayer in this._layers) {
+            // @ts-ignore
             let subLayer = this._layers[superLayer]._layers;
 
             for (let baseLayer in subLayer) {
@@ -17,8 +29,10 @@ L.LayerGroup.include({
 
 
     // Binding all popups.
-    bindAllPopups: function (popupOptions) {
+    bindAllPopups: function (this: L.LayerGroup, popupOptions: any) {
+        // @ts-ignore
         for (let superLayer in this._layers) {
+            // @ts-ignore
             let subLayer = this._layers[superLayer]._layers;
 
             for (let baseLayer in subLayer) {
@@ -36,9 +50,10 @@ L.LayerGroup.include({
 
 
 /*** Additions to the Layer class ***/
+// @ts-ignore
 L.Layer.include({
     // Moving a circle marker.
-    moveMarker: function (latlng) {
+    moveMarker: function (this: any, latlng: L.LatLngExpression) {
         for (let layer in this._layers) {
             let marker = this._layers[layer];
 
@@ -47,7 +62,7 @@ L.Layer.include({
     },
 
     // Getting the latlng object.
-    getMarkerLatLng: function() {
+    getMarkerLatLng: function(this: any) {
         let latlng;
 
         for (let layer in this._layers) {

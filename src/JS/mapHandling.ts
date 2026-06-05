@@ -1,32 +1,14 @@
-/************************
- *** GLOBAL VARIABLES ***
- ************************/
+import L from 'leaflet';
 
-/*** Map related ***/
-// Access token to the map tiles API.
-const mapboxAccessToken = 'pk.eyJ1IjoiZ3VzdGF2Y3JnIiwiYSI6ImNsMHM1amV3MjAzczUzZG81ejNzeTg3dDIifQ.rk9ssli-idSCKtygZjD8og'
-
-// Initiating the map element.
-let map = L.map('mapv1').setView([56.20746, 10.48096], 7);
-
-// Used for determining which format the coordinates is shown in.
-let dmsStatus = true;
-
-// Used for determining whether the user is allowed to add waypoints.
-let mapMode = false;
-
-/*** Waypoint related ***/
-// The collection of user waypoints.
-let usrWPCollection = [];
-
-// User waypoints leaflet layer group.
-let usrWPLayerGroup = L.layerGroup();
-// setting the z-index of the user determined waypoints.
-usrWPLayerGroup.setZIndex(5);
+import { map, dmsStatus, mapMode, usrWPCollection, usrWPLayerGroup, mapboxAccessToken } from './appState';
 
 let wpNo = 0;
-let mad = function() { if(document.querySelector('#cookie')) { sd();} };
 
+// Note: These functions are likely defined in other files.
+// We'll need to import them once those files are refactored.
+// For now, we'll use type-safe placeholders or imports if possible.
+import { addCoordEl } from './menuPane';
+import { updateDirections, getDirections } from './directionsHandling';
 
 /************************
  *** MAP CONSTRUCTION ***
@@ -37,6 +19,7 @@ L.tileLayer('https://api.mapbox.com/styles/v1/{style_id}/tiles/{tileSize}/{z}/{x
     {
         attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Imagery © <a href="https://www.mapbox.com/">Mapbox</a> | &copy <a href="mailto:gustavrisagerus@gmail.com">Gustav C. R. Grønborg</a>',
         maxZoom: 18,
+        // @ts-ignore
         style_id: 'mapbox/outdoors-v11', //Throws a 404 error, but works anyhow.
         tileSize: 512,
         zoomOffset: -1,
@@ -46,16 +29,16 @@ L.tileLayer('https://api.mapbox.com/styles/v1/{style_id}/tiles/{tileSize}/{z}/{x
 
 // Creating the necessary map panes.
 map.createPane('waypoints');
-map.getPane('waypoints').style.zIndex = 1000;
+map.getPane('waypoints')!.style.zIndex = '1000';
 
 map.createPane('facility');
-map.getPane('facility').style.zIndex = 800;
+map.getPane('facility')!.style.zIndex = '800';
 
 map.createPane('direction');
-map.getPane('direction').style.zIndex = 900;
+map.getPane('direction')!.style.zIndex = '900';
 
 map.createPane('popupPane');
-map.getPane('popupPane').style.zIndex = 1100;
+map.getPane('popupPane')!.style.zIndex = '1100';
 
 // Adding the user waypoint layer group to the map.
 usrWPLayerGroup.addTo(map);
@@ -67,12 +50,11 @@ usrWPLayerGroup.addTo(map);
 /*** Functions ***/
 
 // Converting Decimal Degrees to Degrees-Minutes-Seconds.
-function ddToDms(latlngObj) {
+export function ddToDms(latlngObj: L.LatLngLiteral) {
     let lat = latlngObj.lat;
     let lng = latlngObj.lng;
-    let dms = { lat: {}, lng: {} };
+    let dms: any = { lat: {}, lng: {} };
 
-    // TODO: I feel like there is a smarter way around this.
     // Setting DMS latitude
     dms.lat.d = Math.floor(lat);
     dms.lat.m = Math.floor(60 * Math.abs(lat - dms.lat.d));
@@ -92,14 +74,14 @@ function ddToDms(latlngObj) {
 
 
 // Converts Decimal Degrees Minutes to Decimal Degrees and returns an object.
-function dmsToDd(dmsObj) {
-    let latlng = {};
+export function dmsToDd(dmsObj: any) {
+    let latlng: any = {};
 
-    if (dmsObj.lat.d && dmsObj.lat.m && dmsObj.lat.s
-        && dmsObj.lng.d && dmsObj.lng.m && dmsObj.lng.s) {
+    if (dmsObj.lat.d !== undefined && dmsObj.lat.m !== undefined && dmsObj.lat.s !== undefined
+        && dmsObj.lng.d !== undefined && dmsObj.lng.m !== undefined && dmsObj.lng.s !== undefined) {
         // Calculating the latitude and longitude in DD.
-        latlng.lat = dmsObj.lat.d + dmsObj.lat.m + dmsObj.lat.s;
-        latlng.lng = dmsObj.lng.d + dmsObj.lng.m + dmsObj.lng.s;
+        latlng.lat = dmsObj.lat.d + dmsObj.lat.m / 60 + dmsObj.lat.s / 3600;
+        latlng.lng = dmsObj.lng.d + dmsObj.lng.m / 60 + dmsObj.lng.s / 3600;
 
     } else {
         latlng.lat = 56.20746;
@@ -115,9 +97,8 @@ function dmsToDd(dmsObj) {
 
 
 // Converts Decimal Degrees to Degrees-Minutes-Seconds.
-function dmsStringToDdLatlng(latlngStr) {
+export function dmsStringToDdLatlng(latlngStr: string) {
     console.log(latlngStr);
-    //let strArr = latlngStr.split(/[\xB0'"\u00A0]+/);
     let latIdx = latlngStr.indexOf('N') + 1;
     let lat = latlngStr.slice(0, latIdx);
     let lng = latlngStr.slice(latIdx);
@@ -125,18 +106,18 @@ function dmsStringToDdLatlng(latlngStr) {
     let latArr = lat.split(/[\xB0'"]+/);
     let lngArr = lng.split(/[\xB0'"]+/);
 
-    let latlngDMS = { 'lat': {}, 'lng': {} };
-    let latlng;
+    let latlngDMS: any = { 'lat': {}, 'lng': {} };
+    let latlng: any;
 
     // Determining the latitude.
-    latlngDMS.lat.d = Number.parseInt(latArr[0]);
-    latlngDMS.lat.m = Number.parseInt(latArr[1]) / 60;
-    latlngDMS.lat.s = (Number.parseFloat(latArr[2]) / 3600);
+    latlngDMS.lat.d = Number.parseInt(latArr[0]!);
+    latlngDMS.lat.m = Number.parseInt(latArr[1]!) / 60;
+    latlngDMS.lat.s = (Number.parseFloat(latArr[2]!) / 3600);
 
     // Determining the longitude.
-    latlngDMS.lng.d = Number.parseInt(lngArr[0]);
-    latlngDMS.lng.m = Number.parseInt(lngArr[1]) / 60;
-    latlngDMS.lng.s = (Number.parseFloat(lngArr[2]) / 3600);// Determining the longitude.
+    latlngDMS.lng.d = Number.parseInt(lngArr[0]!);
+    latlngDMS.lng.m = Number.parseInt(lngArr[1]!) / 60;
+    latlngDMS.lng.s = (Number.parseFloat(lngArr[2]!) / 3600);
 
     // Converting latitude DMS to DD.
     latlng = dmsToDd(latlngDMS);
@@ -162,7 +143,7 @@ function dmsStringToDdLatlng(latlngStr) {
 
 
 // Converts latlng obj to a nice-looking string
-function latlngToString(latlng) {
+export function latlngToString(latlng: any) {
     let lat = latlng.lat;
     let lng = latlng.lng;
     let latlngStr, latStr, lngStr;
@@ -191,8 +172,12 @@ function latlngToString(latlng) {
  **********************/
 
 /*** User waypoint class ***/
-class UsrGeoJSONWP {
-    constructor(WPNo, latlng)
+export class UsrGeoJSONWP {
+    geoJSON: any;
+    html: any;
+    Leaflet: any;
+
+    constructor(WPNo: number, latlng: L.LatLng)
     {
         let popupStr;
         if (dmsStatus === true) {
@@ -224,7 +209,7 @@ class UsrGeoJSONWP {
         usrWPCollection.push(this);
 
         // Adding the coordinate to the pane
-        addCoordEl(usrWPCollection[usrWPCollection.length - 1]);
+        addCoordEl(usrWPCollection[usrWPCollection.length - 1]!);
     }
 
     // Adding the necessary leaflet properties.
@@ -233,7 +218,7 @@ class UsrGeoJSONWP {
         let self = this;
 
         this.Leaflet = L.geoJSON(this.geoJSON, {
-            pointToLayer: function (feature, latlng) {
+            pointToLayer: function (_feature, latlng) {
                 let marker = L.circleMarker(latlng, {
                     radius: 7,
                     fillColor: "#ef0a0a",
@@ -246,46 +231,47 @@ class UsrGeoJSONWP {
                 });
 
                 // Allowing a circle marker to be dragged.
-                function circleMarkerDrag(e) {
+                function circleMarkerDrag(e: L.LeafletMouseEvent) {
                     marker.setLatLng(e.latlng);
                     marker.redraw();
                 }
 
                 // Preventing the propagation of the click event occurring after the mouse up event.
-                function captureClick(e) {
-                    // function courtesy of https://codeutility.org/javascript-cancel-click-event-in-the-mouseup-event-handler-stack-overflow/
+                function captureClick(e: Event) {
                     e.stopPropagation();
-
                     window.removeEventListener('click', captureClick, true);
                 }
 
                 // Highlighting the marker, when mouseover in coordinate pane.
-                document.querySelector('#' + self.html.idName).addEventListener('mouseover', () => {
-                    marker.setStyle({
-                        radius: 14,
-                        fillColor: "#ef0a0a",
-                        color: "#cc0000",
-                        weight: 3,
-                        opacity: 1,
-                        fillOpacity: 0.8,
+                const el = document.querySelector('#' + self.html.idName);
+                if (el) {
+                    el.addEventListener('mouseover', () => {
+                        marker.setStyle({
+                            radius: 14,
+                            fillColor: "#ef0a0a",
+                            color: "#cc0000",
+                            weight: 3,
+                            opacity: 1,
+                            fillOpacity: 0.8,
 
-                        pane: 'waypoints'
+                            pane: 'waypoints'
+                        });
                     });
-                });
 
-                // Making the marker normal again, when the mouse is no longer over it.
-                document.querySelector('#' + self.html.idName).addEventListener('mouseout', () => {
-                    marker.setStyle({
-                        radius: 7,
-                        fillColor: "#ef0a0a",
-                        color: "#cc0000",
-                        weight: 3,
-                        opacity: 1,
-                        fillOpacity: 0.8,
+                    // Making the marker normal again, when the mouse is no longer over it.
+                    el.addEventListener('mouseout', () => {
+                        marker.setStyle({
+                            radius: 7,
+                            fillColor: "#ef0a0a",
+                            color: "#cc0000",
+                            weight: 3,
+                            opacity: 1,
+                            fillOpacity: 0.8,
 
-                        pane: 'waypoints'
-                    })
-                });
+                            pane: 'waypoints'
+                        })
+                    });
+                }
 
                 // Dragging the marker.
                 marker.addEventListener('mousedown', () => {
@@ -307,17 +293,18 @@ class UsrGeoJSONWP {
 
                     // Updating the coordinates in the this.geojson.geometry.coordinates property.
                     let newLatlng = marker.getLatLng();
-                    let coordEl = document.querySelector('#' + self.html.idName).firstChild;
-                    self.geoJSON.geometry.coordinates = [newLatlng.lng, newLatlng.lat];
+                    const el = document.querySelector('#' + self.html.idName);
+                    if (el) {
+                        let coordEl = el.firstChild as HTMLInputElement;
+                        self.geoJSON.geometry.coordinates = [newLatlng.lng, newLatlng.lat];
 
-                    // Setting the value in the coordinate pane.
-                    if (dmsStatus === true ) {
-                        console.log(ddToDms(newLatlng));
-                        console.log(latlngToString(ddToDms(newLatlng)));
-                        coordEl.value =latlngToString(ddToDms(newLatlng));
+                        // Setting the value in the coordinate pane.
+                        if (dmsStatus === true ) {
+                            coordEl.value = latlngToString(ddToDms(newLatlng));
 
-                    } else if (dmsStatus === false) {
-                        coordEl.value = latlngToString(newLatlng);
+                        } else if (dmsStatus === false) {
+                            coordEl.value = latlngToString(newLatlng);
+                        }
                     }
 
                     // Removing the event listeners that allows the marker to be dragged.
@@ -332,7 +319,8 @@ class UsrGeoJSONWP {
 
                 // Removing the marker.
                 marker.addEventListener('contextmenu', () => {
-                    document.querySelector(self.html.id).remove()
+                    const el = document.querySelector('#' + self.html.idName);
+                    if (el) el.remove();
                     rmvUsrWP(self);
 
                     map.dragging.enable();
@@ -351,7 +339,7 @@ class UsrGeoJSONWP {
 /*** Functions ***/
 
 // Adding a new user waypoint.
-function addUsrWP(event) {
+export function addUsrWP(event: L.LeafletMouseEvent) {
     if (mapMode === true) {
 
         // Initiating the new user defined waypoint. Increment wpNo to always ensure a unique waypoint name.
@@ -360,13 +348,13 @@ function addUsrWP(event) {
         // Adding the necessary leaflet properties.
         usrWP.addLeafletProps();
 
-        usrWPLayerGroup.addLayer(usrWPCollection[usrWPCollection.length - 1].Leaflet);
+        usrWPLayerGroup.addLayer(usrWPCollection[usrWPCollection.length - 1]!.Leaflet);
 
         // Retrieving the directions.
         let usrWPCLength = usrWPCollection.length;
         if (usrWPCLength > 1) {
-            getDirections(usrWPCollection[usrWPCLength - 2].geoJSON.geometry.coordinates,
-                usrWPCollection[usrWPCLength - 1].geoJSON.geometry.coordinates);
+            getDirections(usrWPCollection[usrWPCLength - 2]!.geoJSON.geometry.coordinates,
+                usrWPCollection[usrWPCLength - 1]!.geoJSON.geometry.coordinates);
         }
 
     } else {
@@ -376,12 +364,12 @@ function addUsrWP(event) {
 
 
 // Removing a user determined waypoint
-function rmvUsrWP(usrWPObj) {
+export function rmvUsrWP(usrWPObj: UsrGeoJSONWP) {
     // Finding the index of the waypoint.
     let elIdx = usrWPCollection.findIndex((obj) => obj === usrWPObj);
 
     // Removing the waypoint layer and deleting it from the collection.
-    usrWPLayerGroup.removeLayer(usrWPCollection[elIdx].Leaflet);
+    usrWPLayerGroup.removeLayer(usrWPCollection[elIdx]!.Leaflet);
     usrWPCollection.splice(elIdx, 1);
 
     // Updating the directions.
@@ -395,4 +383,4 @@ function rmvUsrWP(usrWPObj) {
  ***********************/
 
 // Add user waypoint on click.
-map.addEventListener('click', addUsrWP);
+map.addEventListener('click', addUsrWP as any);

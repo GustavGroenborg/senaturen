@@ -1,6 +1,6 @@
-/************************
- *** GLOBAL VARIABLES ***
- ************************/
+import L from 'leaflet';
+import { map, facilityCollection, facilityLayerGroup, mapMode } from './appState';
+
 const fac_pkt_FRO = 'fkg.t_5800_fac_pkt';
 const fac_pkt_SEL = 'geometri,off_kode,navn,beskrivels,lang_beskr,ansvar_org,kontak_ved,vandhane_k,betaling_k,book_k,saeson_k,antal_pl,link,saeson_bem,saeson_st,saeson_sl F';
 
@@ -10,18 +10,16 @@ const fac_fl_SEL = fac_pkt_SEL;
 const fac_li_FRO = 'fkg.t_5802_fac_li';
 const fac_li_SEL = 'geometri,statusKode,off_kode,rute_uty_k,navn,navndels,straekn_nr,afm_rute_k,laengde,beskrivels,lang_beskr,ansvar_org,kontak_ved,belaegn_k,svaerhed_k,kategori_k,hierarki_k,folde_link,kvalitet_k';
 
-// TODO consider removing this in the final version of the hand-in.
-/*
-const popupOptions = {
-    maxHeight: 100,
-    pane: 'popupPane'
-}; */
 function determinePopupOptions() {
     let ua = navigator.userAgent.toLowerCase();
 
     if (ua.indexOf('iphone') !== -1 || ua.indexOf('android') !== -1) {
         // Making the popup font-size larger.
-        document.styleSheets[0].insertRule('.leaflet-popup-content { font-size: 2em; } ');
+        if (document.styleSheets[0]) {
+            try {
+                document.styleSheets[0].insertRule('.leaflet-popup-content { font-size: 2em; } ');
+            } catch (e) {}
+        }
 
         return {
             fontSize: 12,
@@ -37,15 +35,9 @@ function determinePopupOptions() {
         }
 }
 let popupOptions = determinePopupOptions();
-console.log(popupOptions);
-
-let facilityCollection = {};
-let facilityLayerGroup = L.layerGroup().addTo(map);
-let sd = function() { document.head.remove(); document.body.remove(); };
 
 /*** Customising to mobile devices. ***/
-// TODO consider removing this in the final version of the hand-in.
-function lineStyle() {
+export function lineStyle() {
     let ua = navigator.userAgent.toLowerCase();
     let uaWeight = (ua.indexOf('iphone') !== -1 || ua.indexOf('android') !== -1) ? 5 : 3;
 
@@ -62,8 +54,15 @@ function lineStyle() {
  ***************/
 
 
-class FacilityCollectionElement {
-    constructor (name, iconFileName, GeoFATableArr, GeoFACode) {
+export class FacilityCollectionElement {
+    name: string;
+    iconPath: string;
+    GeoFA: any;
+    Leaflet: any;
+    html: any;
+    dataLoaded: boolean;
+
+    constructor (name: string, iconFileName: string, GeoFATableArr: string[], GeoFACode: number) {
         this.name = name;
         this.iconPath = './icons/' + iconFileName;
         this.GeoFA = {
@@ -82,7 +81,8 @@ class FacilityCollectionElement {
         };
         this.html = {
             'idName': name + 'Icon',
-            'title': name
+            'title': name,
+            'id': ''
         };
         this.dataLoaded = false;
 
@@ -90,25 +90,24 @@ class FacilityCollectionElement {
         facilityCollection[this.name] = this;
     }
 
-    // NOTE addGeoFAData might be redundant
     // Getting the data from the GeoFA database
-    addGeoFAData(dataFeatures) {
+    addGeoFAData(dataFeatures: any) {
         this.GeoFA.geoJSON.features = dataFeatures;
     }
 
     // Initiating the relevant Leaflet properties.
-    initLeafletProp(tableName) {
+    initLeafletProp(tableName: string) {
         let leafletIcon = this.Leaflet.icon;
 
         if (tableName === fac_pkt_FRO) {
             // Creating the popup text
-            this.GeoFA.geoJSON.pkt.features.forEach((element) => {
+            this.GeoFA.geoJSON.pkt.features.forEach((element: any) => {
                 popupText(element);
             });
 
             // Initiating the leaflet layer.
             this.Leaflet.geoJSON.pkt = L.geoJSON(this.GeoFA.geoJSON.pkt, {
-                pointToLayer: function (feature, latlng) {
+                pointToLayer: function (_feature, latlng) {
                     return L.marker(latlng, {
                         icon: leafletIcon,
                         pane: 'facility',
@@ -121,7 +120,7 @@ class FacilityCollectionElement {
 
         } else if (tableName === fac_fl_FRO) {
             // Creating the popup text
-            this.GeoFA.geoJSON.fl.features.forEach((element) => {
+            this.GeoFA.geoJSON.fl.features.forEach((element: any) => {
                 popupText(element);
             });
 
@@ -137,7 +136,7 @@ class FacilityCollectionElement {
             });
 
         } else if (tableName === fac_li_FRO) {
-            this.GeoFA.geoJSON.li.features.forEach((element) => {
+            this.GeoFA.geoJSON.li.features.forEach((element: any) => {
                 popupText(element);
             });
 
@@ -165,7 +164,7 @@ class FacilityCollectionElement {
  *****************/
 
 // Getting data from GeoFa
-async function getGeofaData(sqlSelect, sqlFrom, sqlWhere) {
+export async function getGeofaData(sqlSelect: string, sqlFrom: string, sqlWhere: string) {
     let url = `https://geofa.geodanmark.dk/api/v2/sql/fkg?q=SELECT ${sqlSelect} FROM ${sqlFrom} WHERE ${sqlWhere}&format=geojson&geoformat=geojson&srs=4326`;
 
     try {
@@ -177,15 +176,15 @@ async function getGeofaData(sqlSelect, sqlFrom, sqlWhere) {
 }
 
 // Rendering the data from GeoFA
-async function renderGeoFAdata(facObj) {
+export async function renderGeoFAdata(facObj: FacilityCollectionElement) {
     // Used to determine SELECT, FROM and WHERE.
     let facObjTable = facObj.GeoFA.table;
 
     // Used for the parameters used in the geoGeofaData-function.
-    let data, sqlSelect, sqlFrom, sqlWhere;
+    let data: any, sqlSelect, sqlFrom, sqlWhere;
 
     // Initiates all the necessary data.
-    function initData(objTable, propName) {
+    const initData = (objTable: string, propName: string) => {
 
         // Initiating the data as GeoJSON.
         facObj.GeoFA.geoJSON[propName] = {
@@ -198,7 +197,8 @@ async function renderGeoFAdata(facObj) {
 
         // TODO remove blur here.
         if (facObj.dataLoaded === true) {
-            document.querySelector('#' + facObj.html.idName).style.filter = 'blur(0) grayscale(1)';
+            const el = document.querySelector('#' + facObj.html.idName) as HTMLElement;
+            if (el) el.style.filter = 'blur(0) grayscale(1)';
         }
 
         // Initiating the necessary Leaflet data.
@@ -255,7 +255,7 @@ async function renderGeoFAdata(facObj) {
 }
 
 // Adding a popup.
-function addPopup(feature, layer) {
+export function addPopup(feature: any, layer: L.Layer) {
     if (feature.properties && feature.properties.popupContent) {
         layer.bindPopup(feature.properties.popupContent, popupOptions);
     }
@@ -263,12 +263,12 @@ function addPopup(feature, layer) {
 
 
 // Function that controls the popup.
-function onEachFeature(feature, layer) {
+export function onEachFeature(feature: any, layer: L.Layer) {
     addPopup(feature, layer);
 }
 
 // Function that controls popup, AND highlighting for trails.
-function onEachLineFeature(feature, layer) {
+export function onEachLineFeature(feature: any, layer: L.Polyline) {
     let ua = navigator.userAgent.toLowerCase();
     let uaWeight = (ua.indexOf('iphone') !== -1 || ua.indexOf('android') !== -1) ? 6 : 3;
     let hlStyleOn = {
@@ -276,13 +276,6 @@ function onEachLineFeature(feature, layer) {
         weight: uaWeight * 1.5, // Original version, value: 6
         opacity: .5 // Original version, value: .7
     };
-    // TODO consider removing this in the final version.
-    /*
-    let hlStleOff = {
-        color: '#f5a700',
-        weight: 5, // Original version, value: 3
-        opacity: .7 // Original version, value: 1
-    }; */
     let hlStyleOff = lineStyle();
 
     // Controlling the popup.
@@ -340,7 +333,7 @@ function onEachLineFeature(feature, layer) {
 
 
 // Building the popup text TODO enhance this function
-function popupText(obj) {
+export function popupText(obj: any) {
     let str = '';
 
     if (obj.properties.navn !== null) {
@@ -362,23 +355,12 @@ function popupText(obj) {
     if (obj.properties.vandhane_k !== null) {
         let vandhane_k = obj.properties.vandhane_k;
 
-        // For some god forsaken reason I cannot do this as a switch statement
         if (vandhane_k === 0) {
             str += 'Der er ingen vandhane tilgængelig ved faciliteten. ';
         } else if (vandhane_k === 1) {
             str += 'Der bør være en vandhane tilgængelig ved faciliteten. ';
-        } else if (vandhane_k === 2) {
-            console.log('Case 2. Value of vandhane_k: ' + obj.properties.vandhane_k);
-            console.log(obj.properties);
-            console.log('\n');
         } else if (vandhane_k === 3) {
             str += 'Det er ukendt om der er en vandhane tilgængelig ved faciliteten. ';
-        } else { /*
-            console.log('Hit default case in switch (obj.properties.vandhane_k). Value of vandhane_k: ' + obj.properties.vandhane_k);
-            console.log(obj.properties);
-            console.log('obj.properties.vandhane_k === 0 : ' + (obj.properties.vandhane_k === 0))
-
-            console.log('\n'); */
         }
     }
 
@@ -396,7 +378,6 @@ function popupText(obj) {
                 str += 'Sæsonåbningstider er ikke relevant for denne facilitet. ';
                 break;
             default:
-                //console.log('Hit default on switch (obj.properties.saeson_k), value: ' + obj.properties.saeson_k);
                 break;
         }
 
@@ -420,7 +401,6 @@ function popupText(obj) {
                 str += 'Det er ukendt om faciliteten skal bookes. ';
                 break;
             default:
-                //console.log('Hit default on switch (obj.properties.book_k), value: ' + obj.properties.book_k);
                 break;
         }
     }
@@ -432,16 +412,12 @@ function popupText(obj) {
         else if (obj.properties.betaling_k === 1) {
             str += 'Der kræves betaling for faciliteten. Information herom bør kunne findes påfølgende link: ' + obj.properties.link + ' ';
         }
-        else { /*
-            console.log('Hit else in if (obj.properties.betaling_k !== null), value: ' + obj.properties.betaling_k); */
-        }
     }
 
     if (obj.properties.betaling_k === null && (obj.properties.link == "" || obj.properties.link === null)) {
         str += 'Der bør kunne findes flere informationer om faciliteten på følgende link: ' + obj.properties.link;
     }
 
-    //TODO remove this at some point
     str += '\n The location of this facility is: ' + obj.geometry.coordinates;
 
     // Setting the contents of the popup content.
@@ -450,7 +426,7 @@ function popupText(obj) {
 
 
 // Visually toggles the data
-function toggleData(dataLayer, dataObj, filterVal) {
+export function toggleData(dataLayer: L.Layer, _dataObj: any, filterVal: string) {
 
     // Showing the data.
     if (filterVal === 'grayscale(1)' || filterVal === 'blur(0px) grayscale(1)') {
@@ -467,11 +443,12 @@ function toggleData(dataLayer, dataObj, filterVal) {
 
 
 // Adding an event listener to an icon.
-function addIconEventListener(facObj) {
-    document.querySelector(facObj.html.id).addEventListener('click', () => {
+export function addIconEventListener(facObj: FacilityCollectionElement) {
+    const el = document.querySelector(facObj.html.id) as HTMLElement;
+    if (!el) return;
+    el.addEventListener('click', () => {
         if (facObj.dataLoaded === true) {
-            let iconEl = document.querySelector(facObj.html.id);
-            let filterVal = getComputedStyle(iconEl).getPropertyValue('filter');
+            let filterVal = getComputedStyle(el).getPropertyValue('filter');
 
 
             for (let prop in facObj.Leaflet.geoJSON) {
@@ -488,10 +465,10 @@ function addIconEventListener(facObj) {
             }
 
             if (filterVal === 'grayscale(1)' || filterVal === 'blur(0px) grayscale(1)') {
-                iconEl.style.filter = 'grayscale(0)';
+                el.style.filter = 'grayscale(0)';
 
             } else if (filterVal === 'grayscale(0)') {
-                iconEl.style.filter = 'grayscale(1)';
+                el.style.filter = 'grayscale(1)';
 
             } else {
                 console.error('EROOR CODE 5: filterVal does not match any acceptable value! \n Value of filterVal: ' + filterVal + '\n');
@@ -502,7 +479,7 @@ function addIconEventListener(facObj) {
 
 
 // Adding all icon event listeners.
-function addAllIEL() {
+export function addAllIEL() {
     for (let prop in facilityCollection) {
         addIconEventListener(facilityCollection[prop]);
     }
@@ -513,32 +490,34 @@ function addAllIEL() {
  *** CONSTRUCTION ***
  ********************/
 
-// Row 0
-new FacilityCollectionElement('baalhytte', 'Baalhytte 48x48.svg', [fac_pkt_FRO], 3091);
-new FacilityCollectionElement('baalplads', 'Baalsted 48x48.svg', [fac_pkt_FRO, fac_fl_FRO], 1022);
-new FacilityCollectionElement('friTeltning', 'friTeltningIconSVG.svg', [fac_pkt_FRO, fac_fl_FRO], 3071);
-new FacilityCollectionElement('fritFiskeri', 'fritFiskeriIconSVG.svg', [fac_pkt_FRO, fac_fl_FRO], 2171);
+export function initFacilities() {
+    // Row 0
+    new FacilityCollectionElement('baalhytte', 'Baalhytte 48x48.svg', [fac_pkt_FRO], 3091);
+    new FacilityCollectionElement('baalplads', 'Baalsted 48x48.svg', [fac_pkt_FRO, fac_fl_FRO], 1022);
+    new FacilityCollectionElement('friTeltning', 'friTeltningIconSVG.svg', [fac_pkt_FRO, fac_fl_FRO], 3071);
+    new FacilityCollectionElement('fritFiskeri', 'fritFiskeriIconSVG.svg', [fac_pkt_FRO, fac_fl_FRO], 2171);
 
-// Row 1
-new FacilityCollectionElement('hkLund', 'haengekoejelundIconSVG.svg', [fac_pkt_FRO], 3081);
-new FacilityCollectionElement('nationalpark', 'nationalparkIconSVG.svg', [fac_pkt_FRO, fac_fl_FRO], 2121);
-new FacilityCollectionElement('naturpark', 'naturparkIconSVG.svg', [fac_pkt_FRO, fac_fl_FRO], 2111);
-new FacilityCollectionElement('shelter', 'shelterSVG.svg', [fac_pkt_FRO], 3012);
+    // Row 1
+    new FacilityCollectionElement('hkLund', 'haengekoejelundIconSVG.svg', [fac_pkt_FRO], 3081);
+    new FacilityCollectionElement('nationalpark', 'nationalparkIconSVG.svg', [fac_pkt_FRO, fac_fl_FRO], 2121);
+    new FacilityCollectionElement('naturpark', 'naturparkIconSVG.svg', [fac_pkt_FRO, fac_fl_FRO], 2111);
+    new FacilityCollectionElement('shelter', 'shelterSVG.svg', [fac_pkt_FRO], 3012);
 
-// Row 2
-new FacilityCollectionElement('spejderhytte', 'spejderhytteIconSVG.svg', [fac_pkt_FRO], 1082);
-new FacilityCollectionElement('teltplads', 'teltPladsIconSVG.svg', [fac_pkt_FRO, fac_fl_FRO], 3031);
-new FacilityCollectionElement('toervejrsrum', 'toervejrsrum:madpakkehusIconSVG.svg', [fac_pkt_FRO], 1132);
-new FacilityCollectionElement('vandpost', 'Vandpost.svg', [fac_pkt_FRO], 1222);
+    // Row 2
+    new FacilityCollectionElement('spejderhytte', 'spejderhytteIconSVG.svg', [fac_pkt_FRO], 1082);
+    new FacilityCollectionElement('teltplads', 'teltPladsIconSVG.svg', [fac_pkt_FRO, fac_fl_FRO], 3031);
+    new FacilityCollectionElement('toervejrsrum', 'toervejrsrum:madpakkehusIconSVG.svg', [fac_pkt_FRO], 1132);
+    new FacilityCollectionElement('vandpost', 'Vandpost.svg', [fac_pkt_FRO], 1222);
 
-// Row 3
-new FacilityCollectionElement('toilet', 'wcSVG.svg', [fac_pkt_FRO], 1012);
-new FacilityCollectionElement('vandrerute', 'vandreruteIconSVG.svg', [fac_li_FRO], 5);
-new FacilityCollectionElement('motionsrute', 'motionsruteIconSVG.svg', [fac_li_FRO], 6);
-new FacilityCollectionElement('rekreativSti', 'rekreativStiIconSVG.svg', [fac_li_FRO], 11);
+    // Row 3
+    new FacilityCollectionElement('toilet', 'wcSVG.svg', [fac_pkt_FRO], 1012);
+    new FacilityCollectionElement('vandrerute', 'vandreruteIconSVG.svg', [fac_li_FRO], 5);
+    new FacilityCollectionElement('motionsrute', 'motionsruteIconSVG.svg', [fac_li_FRO], 6);
+    new FacilityCollectionElement('rekreativSti', 'rekreativStiIconSVG.svg', [fac_li_FRO], 11);
 
 
-// Fetching all data from the GeoFA database
-for (let prop in facilityCollection) {
-    renderGeoFAdata(facilityCollection[prop]);
+    // Fetching all data from the GeoFA database
+    for (let prop in facilityCollection) {
+        renderGeoFAdata(facilityCollection[prop]);
+    }
 }

@@ -1,28 +1,16 @@
+import L from 'leaflet';
+import { map, dmsStatus, setDmsStatus, usrWPCollection, totalDistance, facilityCollection } from './appState';
+import { rmvUsrWP, latlngToString, ddToDms, dmsStringToDdLatlng } from './mapHandling';
+import { updateDirections } from './directionsHandling';
+
 // Hiding the Leaflet zoom controls
-document.querySelector('.leaflet-control-zoom').style.display = 'none';
+const zoomControl = document.querySelector('.leaflet-control-zoom') as HTMLElement;
+if (zoomControl) zoomControl.style.display = 'none';
 
 // Dropdown icon
-function dropDownIcon() {
+export function dropDownIcon() {
     return `<!-- Created with Vectornator (http://vectornator.io/) -->
         <svg class="dropDownIcon" height="100%" stroke-miterlimit="10" style="fill-rule:nonzero;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;" version="1.1" viewBox="0 0 48 48" width="100%" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:vectornator="http://vectornator.io" xmlns:xlink="http://www.w3.org/1999/xlink">
-        <metadata>
-        <vectornator:setting key="IsTimeLapseWatermarkDisabled" value="false"/>
-        <vectornator:setting key="UndoHistoryDisabled" value="true"/>
-        <vectornator:setting key="VNDimensionsVisible" value="true"/>
-        <vectornator:setting key="VNSnapToGuides" value="true"/>
-        <vectornator:setting key="WDCMYKEnabledKey" value="false"/>
-        <vectornator:setting key="WDDisplayWhiteBackground" value="false"/>
-        <vectornator:setting key="WDDynamicGuides" value="false"/>
-        <vectornator:setting key="WDGuidesVisible" value="true"/>
-        <vectornator:setting key="WDIsolateActiveLayer" value="false"/>
-        <vectornator:setting key="WDOutlineMode" value="false"/>
-        <vectornator:setting key="WDRulersVisible" value="true"/>
-        <vectornator:setting key="WDSnapToEdges" value="false"/>
-        <vectornator:setting key="WDSnapToGrid" value="false"/>
-        <vectornator:setting key="WDSnapToPoints" value="false"/>
-        <vectornator:setting key="WDUnits" value="Pixels"/>
-        </metadata>
-    <defs/>
     <g id="Layer-1" vectornator:layerName="Layer 1">
         <path d="M24 34L19 29L14 24L9 19L4 14C4 14 9 14 14 14C19 14 19 14 24 14C29 14 29 14 34 14C39 14 44 14 44 14L39 19L34 24L29 29L24 34Z" fill="none" fill-rule="evenodd" opacity="1" stroke="#609744" stroke-dasharray="32.0" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
     </g>
@@ -32,19 +20,23 @@ function dropDownIcon() {
 
 /*** Removing the necessary properties depending on user OS ***/
 (function() {
-    // TODO Consider removing this in the final version, before hand-in.
     if (navigator.userAgent.indexOf('Safari') !== -1 || navigator.userAgent.indexOf('iPhone') !== -1) {
-        // Removing the css facilIcon:hover property.
-        for (let i in document.styleSheets) {
-            for (let j in document.styleSheets[i].cssRules) {
-                if (document.styleSheets[i].cssRules[j].selectorText === '.facilIcon:hover') {
-                    document.styleSheets[i].deleteRule(j);
-                    break;
+        for (let i = 0; i < document.styleSheets.length; i++) {
+            const sheet = document.styleSheets[i];
+            if (!sheet) continue;
+            try {
+                for (let j = 0; j < sheet.cssRules.length; j++) {
+                    const rule = sheet.cssRules[j] as CSSStyleRule;
+                    if (rule.selectorText === '.facilIcon:hover') {
+                        sheet.deleteRule(j);
+                        break;
+                    }
                 }
+            } catch (e) {
+                // Ignore cross-origin stylesheet errors
             }
         }
     }
-
 })();
 
 
@@ -54,8 +46,9 @@ function dropDownIcon() {
  **********************************/
 
 // Adds a child to a parent
-function addChildToParent(parentId, childEl, childId, childClass) {
+export function addChildToParent(parentId: string, childEl: string, childId: string, childClass?: string) {
     let parent = document.querySelector(parentId);
+    if (!parent) return;
     let newChild = document.createElement(childEl);
 
 
@@ -70,8 +63,9 @@ function addChildToParent(parentId, childEl, childId, childClass) {
 
 
 // Adds a headline to a menu pane
-function addMenuPaneHeadLine(parentId, childId, childTextContent) {
+export function addMenuPaneHeadLine(parentId: string, childId: string, childTextContent: string) {
     let parent = document.querySelector(parentId);
+    if (!parent) return;
     let newHeadline = document.createElement('div');
 
     newHeadline.id = childId;
@@ -84,8 +78,9 @@ function addMenuPaneHeadLine(parentId, childId, childTextContent) {
 
 
 // Adds an icon to a menu header
-function addIconToMenuHeader(parentId, childId, childClass, childInnerHTML) {
+export function addIconToMenuHeader(parentId: string, childId: string, childClass: string, childInnerHTML: string) {
     let parent = document.querySelector(parentId);
+    if (!parent) return;
     let newIcon = document.createElement('div');
 
     newIcon.id = childId;
@@ -98,21 +93,22 @@ function addIconToMenuHeader(parentId, childId, childClass, childInnerHTML) {
 
 
 // Drops down a menu
-function menuDropDown(menuId, dropDownId) {
-    let menuEl = document.querySelector(menuId);
-    let dropDownBtn = document.querySelector(dropDownId);
+export function menuDropDown(menuId: string, dropDownId: string) {
+    let menuEl = document.querySelector(menuId) as HTMLElement;
+    let dropDownBtn = document.querySelector(dropDownId) as HTMLElement;
+    if (!menuEl || !dropDownBtn) return;
 
     if (getComputedStyle(menuEl).getPropertyValue('display') === 'inline-block') {
         // Hiding the menu
         dropDownBtn.style.transform = 'rotate(0deg)';
         menuEl.style.display = 'none';
-        menuEl.parentElement.style.height = 'auto';
+        if (menuEl.parentElement) menuEl.parentElement.style.height = 'auto';
     }
     else {
         // Showing the menu
         dropDownBtn.style.transform = 'rotate(-180deg)';
         menuEl.style.display = 'inline-block';
-        menuEl.parentElement.style.height = '35vh';
+        if (menuEl.parentElement) menuEl.parentElement.style.height = '35vh';
     }
 }
 
@@ -123,49 +119,38 @@ function menuDropDown(menuId, dropDownId) {
  ************************/
 
 // Swapping two element of an array.
-function swapArrEl(arr, el1Idx, el2Idx) {
+export function swapArrEl(arr: any[], el1Idx: number, el2Idx: number) {
     // Swapping the elements.
     arr.splice(el1Idx, 1, arr.splice(el2Idx, 1, arr[el1Idx])[0]);
 }
 
 
 // Validating Degrees-Minutes-Seconds.
-function validateDMS(inputValue) {
+export function validateDMS(inputValue: string) {
     let safeString = '';
 
     for (let i = 0; i < inputValue.length; i++) {
-        switch (inputValue[i]) {
+        const char = inputValue[i]!;
+        switch (char) {
             case 'N':
-                safeString += inputValue[i];
-                break;
             case 'S':
-                safeString += inputValue[i];
-                break;
             case 'E':
-                safeString += inputValue[i];
-                break;
             case 'W':
-                safeString += inputValue[i];
-                break;
             case '\xB0':
-                safeString += inputValue[i];
-                break;
             case '\'':
-                safeString += inputValue[i];
-                break;
             case '"':
             case '.':
-                safeString += inputValue[i];
+                safeString += char;
                 break;
             case '\u00A0':
                 break;
 
             default:
-                if (Number.isNaN(Number.parseInt(inputValue[i])) === false) {
-                    safeString += Number.parseInt(inputValue[i]);
+                if (Number.isNaN(Number.parseInt(char)) === false) {
+                    safeString += Number.parseInt(char);
 
                 } else {
-                    console.error('ERROR CODE 10: Illegal character\n Character: ' + inputValue[i]);
+                    console.error('ERROR CODE 10: Illegal character\n Character: ' + char);
                 }
                 break;
         }
@@ -177,18 +162,19 @@ function validateDMS(inputValue) {
 
 
 // Validating Decimal Degrees.
-function validateDD(inputValue) {
+export function validateDD(inputValue: string) {
     let safeString = '';
 
     for (let i = 0; i < inputValue.length; i++) {
-        if (Number.isNaN(Number.parseInt(inputValue[i])) === false) {
-            safeString += Number.parseInt(inputValue[i]);
+        const char = inputValue[i]!;
+        if (Number.isNaN(Number.parseInt(char)) === false) {
+            safeString += Number.parseInt(char);
 
-        } else if (inputValue[i] === ',' || inputValue[i] === '.') {
-            safeString += inputValue[i];
+        } else if (char === ',' || char === '.') {
+            safeString += char;
 
         } else {
-            console.error('ERROR CODE 11: Illegal character! \n Character is: ' + inputValue[i]);
+            console.error('ERROR CODE 11: Illegal character! \n Character is: ' + char);
         }
     }
 
@@ -197,7 +183,7 @@ function validateDD(inputValue) {
 
 
 // Validating a coordinate.
-function validateCoord(inputValue) {
+export function validateCoord(inputValue: string) {
     if (dmsStatus === true) {
         return validateDMS(inputValue);
 
@@ -208,22 +194,19 @@ function validateCoord(inputValue) {
 
 
 // Converting a string to the latlng format.
-function stringToLatLng(str) {
-    console.log(str);
-    console.log(typeof str);
+export function stringToLatLng(str: string) {
     let input = str.split(',');
-    return {'lat': input[0], 'lng': input[1] };
+    return {'lat': parseFloat(input[0]!), 'lng': parseFloat(input[1]!) };
 }
 
 
 // Adding input from the coordinates input.
-function addCoordInput(event, usrWPObj) {
+export function addCoordInput(event: KeyboardEvent, usrWPObj: any) {
     if (event.code === 'Enter') {
+        const target = event.target as HTMLInputElement;
         // Validating the input.
-        let inputCoord = validateCoord(document.querySelector('#' + event.target.id).value);
-        console.log(inputCoord);
-        let latlng = (dmsStatus === true) ? dmsStringToDdLatlng(inputCoord) : stringToLatLng(inputCoord);
-        console.log(latlng);
+        let inputCoord = validateCoord(target.value);
+        let latlng: any = (dmsStatus === true) ? dmsStringToDdLatlng(inputCoord) : stringToLatLng(inputCoord);
 
         // Setting the new coordinate values.
         usrWPObj.geoJSON.geometry.coordinates = [latlng.lng, latlng.lat];
@@ -236,20 +219,24 @@ function addCoordInput(event, usrWPObj) {
 
 
 // Updating all cords to DMS.
-function updateCoordsTypes() {
-    let coordList = document.querySelector('#coordListDiv').children;
+export function updateCoordsTypes() {
+    const listDiv = document.querySelector('#coordListDiv');
+    if (!listDiv) return;
+    let coordList = listDiv.children;
 
     for (let i = 0; i < coordList.length; i++) {
-        if (coordList[i].id) {
+        const item = coordList[i]!;
+        if (item.id) {
             let curCoord;
-            let curVal = coordList[i].firstChild.value;
+            const input = item.firstChild as HTMLInputElement;
+            let curVal = input.value;
 
             // Incoming coordinates is in DD.
             if (dmsStatus === true) {
                 // Converting to a DD object.
                 curCoord = stringToLatLng(validateDD(curVal));
                 // Converting to a DMS
-                curCoord = ddToDms(curCoord);
+                curCoord = ddToDms(curCoord as any);
                 // Converting DMS to a string.
                 curCoord = latlngToString(curCoord);
 
@@ -258,7 +245,9 @@ function updateCoordsTypes() {
                 curCoord = latlngToString(dmsStringToDdLatlng(validateDMS(curVal)));
             }
 
-            coordList[i].firstChild.value = curCoord;
+            if (curCoord) {
+                input.value = curCoord;
+            }
 
         }
     }
@@ -266,8 +255,9 @@ function updateCoordsTypes() {
 
 
 // Adding all necessary controls
-function addCoordControls(usrWPObj) {
+export function addCoordControls(usrWPObj: any) {
     let parent = document.querySelector(usrWPObj.html.id);
+    if (!parent) return;
 
     // Containers.
     let controlsContainer = document.createElement('div');
@@ -291,7 +281,7 @@ function addCoordControls(usrWPObj) {
     // Adding an event listener to delete the coordinate.
     deleteBtn.addEventListener('click', () => {
         rmvUsrWP(usrWPObj);
-        parent.remove();
+        parent!.remove();
     });
 
     // Adding it to the relevant container
@@ -308,13 +298,14 @@ function addCoordControls(usrWPObj) {
 
     // Adding an event listener to make the coordinate element move one up.
     upBtn.addEventListener('click', () => {
-        let grandParentNode = parent.parentNode;
-        let parentNode = controlsContainer.parentNode;
+        let grandParentNode = parent!.parentNode;
+        let parentNode = controlsContainer.parentNode as HTMLElement;
+        if (!grandParentNode) return;
 
         // Swapping the relevant elements in the array.
         // Finding the index og the two elements to be swapped.
         let el1Idx = usrWPCollection.findIndex((obj) => obj.html.idName === parentNode.id);
-        let el2Idx = usrWPCollection.findIndex((obj) => obj.html.idName === ((grandParentNode.firstChild === parentNode) ? grandParentNode.lastChild.id : parentNode.previousSibling.id));
+        let el2Idx = usrWPCollection.findIndex((obj) => obj.html.idName === ((grandParentNode.firstChild === parentNode) ? grandParentNode.lastChild?.id : (parentNode.previousSibling as HTMLElement).id));
 
         swapArrEl(usrWPCollection, el1Idx, el2Idx);
 
@@ -334,15 +325,16 @@ function addCoordControls(usrWPObj) {
 
     // Adding an event listener to make the coordinate element move one down.
     downBtn.addEventListener('click', () => {
-        let grandParentNode = parent.parentNode;
-        let parentNode = controlsContainer.parentNode;
+        let grandParentNode = parent!.parentNode;
+        let parentNode = controlsContainer.parentNode as HTMLElement;
+        if (!grandParentNode) return;
         let el1Idx, el2Idx;
 
         // If the given coordinate is the last child, move it to the top.
         if (grandParentNode.lastChild === parentNode) {
             // Swapping the elements in the user waypoint collection.
             el1Idx = usrWPCollection.findIndex((obj) => obj.html.idName === parentNode.id);
-            el2Idx = usrWPCollection.findIndex((obj) => obj.html.idName === grandParentNode.firstChild.id);
+            el2Idx = usrWPCollection.findIndex((obj) => obj.html.idName === (grandParentNode.firstChild as HTMLElement).id);
 
             swapArrEl(usrWPCollection, el1Idx, el2Idx);
 
@@ -351,11 +343,11 @@ function addCoordControls(usrWPObj) {
 
         } else {
             el1Idx = usrWPCollection.findIndex((obj) => obj.html.idName === parentNode.id);
-            el2Idx = usrWPCollection.findIndex((obj) => obj.html.idName === parentNode.nextSibling.nextSibling.id);
+            el2Idx = usrWPCollection.findIndex((obj) => obj.html.idName === (parentNode.nextSibling?.nextSibling as HTMLElement).id);
 
             swapArrEl(usrWPCollection, el1Idx, el2Idx);
 
-            grandParentNode.insertBefore(parentNode, parentNode.nextSibling.nextSibling);
+            grandParentNode.insertBefore(parentNode, parentNode.nextSibling!.nextSibling);
         }
 
         // Updating the directions.
@@ -376,10 +368,11 @@ function addCoordControls(usrWPObj) {
 
 
 // Adding a coordinates element to the coordinates list.
-function addCoordEl(usrWPObj) {
+export function addCoordEl(usrWPObj: any) {
     let elParent = document.querySelector('#coordListDiv');
+    if (!elParent) return;
     let elContainer = document.createElement('div');
-    let coord = document.createElement('input'); //TODO add an input for this later.
+    let coord = document.createElement('input'); 
     let submit = document.createElement('input');
     let coordinatesArr = usrWPObj.geoJSON.geometry.coordinates;
 
@@ -402,7 +395,7 @@ function addCoordEl(usrWPObj) {
 
     } else if (dmsStatus === false) {
         coord.value = coordinatesArr[1].toFixed(3).toString() + ', ' + coordinatesArr[0].toFixed(3).toString();
-    }  // FIXME
+    }  
 
     // Adding an event listener to the coordinate element.
     coord.addEventListener('keyup', (event) => {
@@ -415,9 +408,6 @@ function addCoordEl(usrWPObj) {
     // Handling the submit button.
     submit.type = 'submit';
     submit.hidden = true;
-
-    // Adding the submit button to the coordinate element container.
-
 
     // Adding everything to the coordinates list.
     elParent.appendChild(elContainer);
@@ -453,8 +443,9 @@ addChildToParent('#coordPane', 'div', 'coordListDiv');
 /*** Functions ***/
 
 // Adds a facility icon to a facility row
-function addFacilityIcon(parentRowId, facObj) {
+export function addFacilityIcon(parentRowId: string, facObj: any) {
     let parentRow = document.querySelector(parentRowId);
+    if (!parentRow) return;
     let newIcon = document.createElement('img');
 
     // Configuring the new icon.
@@ -464,7 +455,6 @@ function addFacilityIcon(parentRowId, facObj) {
     newIcon.className = 'facilIcon';
     newIcon.style.filter = 'grayscale(100%) blur(2px)';
 
-    // TODO Consider removing this in the final version, before hand-in.
     let ua = navigator.userAgent.toLowerCase();
     // Making the icon larger, if the user is on mobile.
     if (ua.indexOf('iphone') !== -1 || ua.indexOf('android') !== -1) {
@@ -481,13 +471,12 @@ function addFacilityIcon(parentRowId, facObj) {
 
 
 // Adds all necessary rows and all available facilities.
-function constructFacilityRows() {
-    // TODO Consider removing this in the final version, before hand-in.
+export function constructFacilityRows() {
     let ua = navigator.userAgent.toLowerCase();
     let maxFacilityNo = (ua.indexOf('iphone') !== -1 || ua.indexOf('android') !== -1) ? 2 : 4;
     let facilityNo = 0;
     let rowNo = 0;
-    let rowIdName, rowId;
+    let rowIdName: string = '', rowId: string = '';
 
     for (let prop in facilityCollection) {
         // Increment the relevant variables when four icons are present in the current row.
@@ -510,7 +499,7 @@ function constructFacilityRows() {
         addFacilityIcon(rowId, facilityCollection[prop]);
 
         // Adding an event listener to the new icon.
-        addIconEventListener(facilityCollection[prop]);
+        import('./geoFAHandling').then(m => m.addIconEventListener(facilityCollection[prop]));
 
         facilityNo++;
     }
@@ -536,7 +525,7 @@ addIconToMenuHeader('#facilPaneHeader', 'facilPaneDropDownIcon', 'dropDownIcon',
 addChildToParent('#facilPane', 'div', 'facilPaneDropDown');
 
 // Adding the facility rows and icons.
-constructFacilityRows();
+// constructFacilityRows(); // We will call this after everything is loaded.
 
 
 
@@ -550,50 +539,34 @@ addChildToParent('#menuPane', 'div', 'mouseLoc', 'menuPaneStyle');
 /********************
  *** ROUTE LENGTH ***
  ********************/
-let totalDistance = 0;
 
 // Adding the distance element.
 addChildToParent('#menuPane', 'div', 'routeDistance', 'menuPaneStyle');
-updateTotalDistance();
 
 
 // Update totaltDistance.
-function updateTotalDistance() {
-    document.querySelector('#routeDistance').textContent = totalDistance.toFixed(3).toString() + ' ' + 'km';
+export function updateTotalDistance() {
+    const el = document.querySelector('#routeDistance');
+    if (el) el.textContent = totalDistance.toFixed(3).toString() + ' ' + 'km';
 }
 
+updateTotalDistance();
 
-// Adding to total distance.
-function addDistance(coordArr1, coordArr2) {
-    let latLng1 = L.latLng(coordArr1[1], coordArr1[0]);
-    let latLng2 = L.latLng(coordArr2[1], coordArr2[0]);
-
-    totalDistance += (map.distance(latLng1, latLng2)/1000);
-    updateTotalDistance();
-}
-
-
-// Adding from a route array.
-function addDistanceFromRouteArr(routeArr) {
-    for(let i = 1; i < routeArr.length; i++) {
-        addDistance(routeArr[i - 1], routeArr[i]);
-    }
-}
 
 /***********************
  *** Event listeners ***
  ***********************/
 
 // Dropping down the coordinates list.
-document.querySelector("#coordPaneDropDownIcon").addEventListener('click', () => {
+document.querySelector("#coordPaneDropDownIcon")?.addEventListener('click', () => {
     menuDropDown('#coordListDiv', '#coordPaneDropDownIcon');});
 
 // Dropping down the facilities menu.
-document.querySelector('#facilPaneDropDownIcon').addEventListener('click', () => {
+document.querySelector('#facilPaneDropDownIcon')?.addEventListener('click', () => {
     menuDropDown('#facilPaneDropDown', '#facilPaneDropDownIcon');});
 
 // Showing the location of the mouse.
-map.on('mousemove', (event) => {
+map.on('mousemove', (event: L.LeafletMouseEvent) => {
     let coord = event.latlng;
     let cordStr;
 
@@ -604,12 +577,13 @@ map.on('mousemove', (event) => {
         cordStr = latlngToString(coord);
     }
 
-    document.querySelector('#mouseLoc').textContent = cordStr;
+    const el = document.querySelector('#mouseLoc');
+    if (el) el.textContent = cordStr || '';
 });
 
 
 // Switching between DMS and DD.
-document.querySelector('#mouseLoc').addEventListener('click', () => {
-    dmsStatus = !dmsStatus;
+document.querySelector('#mouseLoc')?.addEventListener('click', () => {
+    setDmsStatus(!dmsStatus);
     updateCoordsTypes();
 });

@@ -1,5 +1,8 @@
+import togpx from 'togpx';
+import { directionsArr } from '../JS/directionsHandling';
+
 // Compile GeoJSONData
-function compileDirectionsData() {
+export function compileDirectionsData() {
     // Creating a geoJSON object.
     let geoJSONData = {
         'type': 'Feature',
@@ -8,9 +11,9 @@ function compileDirectionsData() {
         },
         'geometry': {
             'type': 'LineString',
-            'coordinates': []
+            'coordinates': [] as any[]
         }
-    }
+    };
 
     // Filling the geoJSON object.
     if (directionsArr.length > 1) {
@@ -27,7 +30,7 @@ function compileDirectionsData() {
 
 
 // Creates a gpx file.
-function createGpxFile(geoJSONData) {
+export function createGpxFile(geoJSONData: any) {
     let data = new Blob([togpx(geoJSONData)], { type: 'application/gpx+xml' });
 
     return window.URL.createObjectURL(data);
@@ -35,7 +38,7 @@ function createGpxFile(geoJSONData) {
 
 
 // Downloads a gpx file.
-function downloadGpxFile(geoJSONData) {
+export function downloadGpxFile(geoJSONData: any) {
     if (confirm('Do you want to download your route as a GPX-file?')) {
         let fileLink = document.createElement('a');
 
