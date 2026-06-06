@@ -11,9 +11,6 @@ import { constructFacilityRows } from './JS/menuPane';
 
 // Initialize the app
 function init() {
-    // Start cookie popup
-    setTimeout(cookiePopup, 1);
-
     // Initialize facilities
     initFacilities();
 
