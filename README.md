@@ -1,8 +1,8 @@
 # Se naturen
+A continuation of my second semester project for computer science at AAU, where I build a small web-app to view outdorr-related facilities in Denmark. The project was originally written in pure JavaScript, but with the help of Google Gemini it was swiftly converted to Typescript.
 
-This project is a web-based map application focused on displaying outdoor facilities and nature trails in Denmark. It has been modernized from a legacy JavaScript project to a robust **TypeScript** application powered by **Vite**.
-
-## 🚀 Getting Started
+## Building and running
+Please note that the build and run isntructions has been written by Google Gemini.
 
 ### Prerequisites
 
