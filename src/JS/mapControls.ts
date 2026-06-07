@@ -25,7 +25,7 @@ export function addMapModeToggle() {
     // Setting the source of the icon.
     let mapModeBtn = document.querySelector('#mapModeToggle') as HTMLImageElement;
     if (mapModeBtn) {
-        mapModeBtn.src = 'icons/mapModeIconSVG.svg';
+        mapModeBtn.src = `${import.meta.env.BASE_URL}icons/mapModeIconSVG.svg`;
         mapModeBtn.className = 'mapControlsEl';
         // Adding an event listener to the mapModeToggle.
         mapModeBtn.addEventListener('click', toggleMapMode);
@@ -66,7 +66,7 @@ export function addGpxBtn() {
     // Setting the source of the icon.
     let gpxbtn = document.querySelector('#gpxBtn') as HTMLImageElement;
     if (gpxbtn) {
-        gpxbtn.src = 'icons/gpxIconSVG.svg';
+        gpxbtn.src = `${import.meta.env.BASE_URL}icons/gpxIconSVG.svg`;
         gpxbtn.className = 'mapControlsEl';
 
         // Adding an event listener to the gpx button.

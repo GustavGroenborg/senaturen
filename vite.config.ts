@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: './', // Using relative paths for deployment flexibility
+  base: '/senaturen/', // Set to your repository name for GitHub Pages
   build: {
     outDir: 'dist',
   },

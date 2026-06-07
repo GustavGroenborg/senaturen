@@ -275,7 +275,7 @@ export function addCoordControls(usrWPObj: any) {
     /*** Configuring the delete button ***/
 
     deleteBtn.id = parent.id + 'DeleteBtn';
-    deleteBtn.src = './icons/deleteIconSVG.svg';
+    deleteBtn.src = `${import.meta.env.BASE_URL}icons/deleteIconSVG.svg`;
     deleteBtn.className = 'deleteBtnClass';
 
     // Adding an event listener to delete the coordinate.
@@ -291,7 +291,7 @@ export function addCoordControls(usrWPObj: any) {
     /*** Configuring the up button ***/
 
     upBtn.id = parent.id + 'UpBtn';
-    upBtn.src = './icons/upDownIconSVG.svg';
+    upBtn.src = `${import.meta.env.BASE_URL}icons/upDownIconSVG.svg`;
     // Making the up button point up.
     upBtn.style.transform = 'rotate(180deg)';
     upBtn.className = 'upBtnClass';
