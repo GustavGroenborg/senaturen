@@ -492,8 +492,8 @@ export function addAllIEL() {
 
 export function initFacilities() {
     // Row 0
-    new FacilityCollectionElement('baalhytte', 'Baalhytte 48x48.svg', [fac_pkt_FRO], 3091);
-    new FacilityCollectionElement('baalplads', 'Baalsted 48x48.svg', [fac_pkt_FRO, fac_fl_FRO], 1022);
+    new FacilityCollectionElement('baalhytte', 'Baalhytte_48x48.svg', [fac_pkt_FRO], 3091);
+    new FacilityCollectionElement('baalplads', 'Baalsted_48x48.svg', [fac_pkt_FRO, fac_fl_FRO], 1022);
     new FacilityCollectionElement('friTeltning', 'friTeltningIconSVG.svg', [fac_pkt_FRO, fac_fl_FRO], 3071);
     new FacilityCollectionElement('fritFiskeri', 'fritFiskeriIconSVG.svg', [fac_pkt_FRO, fac_fl_FRO], 2171);
 
@@ -506,7 +506,7 @@ export function initFacilities() {
     // Row 2
     new FacilityCollectionElement('spejderhytte', 'spejderhytteIconSVG.svg', [fac_pkt_FRO], 1082);
     new FacilityCollectionElement('teltplads', 'teltPladsIconSVG.svg', [fac_pkt_FRO, fac_fl_FRO], 3031);
-    new FacilityCollectionElement('toervejrsrum', 'toervejrsrum:madpakkehusIconSVG.svg', [fac_pkt_FRO], 1132);
+    new FacilityCollectionElement('toervejrsrum', 'toervejrsrum_madpakkehusIconSVG.svg', [fac_pkt_FRO], 1132);
     new FacilityCollectionElement('vandpost', 'Vandpost.svg', [fac_pkt_FRO], 1222);
 
     // Row 3
