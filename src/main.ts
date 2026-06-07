@@ -6,7 +6,6 @@ import './CSS/mapControlsStyle.css';
 import './JS/leafletPlugins';
 import { initFacilities } from './JS/geoFAHandling';
 import { createMapControls } from './JS/mapControls';
-import { cookiePopup } from './JS/cookiePopup';
 import { constructFacilityRows } from './JS/menuPane';
 
 // Initialize the app
