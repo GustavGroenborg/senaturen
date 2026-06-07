@@ -1,6 +1,6 @@
 import L from 'leaflet';
 
-export const mapboxAccessToken = 'pk.eyJ1IjoiZ3VzdGF2Y3JnIiwiYSI6ImNsMHM1amV3MjAzczUzZG81ejNzeTg3dDIifQ.rk9ssli-idSCKtygZjD8og';
+export const mapboxAccessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
 export const map = L.map('mapv1').setView([56.20746, 10.48096], 7);
 
