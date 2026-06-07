@@ -64,7 +64,7 @@ export class FacilityCollectionElement {
 
     constructor (name: string, iconFileName: string, GeoFATableArr: string[], GeoFACode: number) {
         this.name = name;
-        this.iconPath = './icons/' + iconFileName;
+        this.iconPath = `${import.meta.env.BASE_URL}icons/${iconFileName}`;
         this.GeoFA = {
             'table': GeoFATableArr,
             'code': GeoFACode,
@@ -72,7 +72,7 @@ export class FacilityCollectionElement {
         };
         this.Leaflet = {
             'icon': L.icon({
-                iconUrl: './icons/' + iconFileName,
+                iconUrl: `${import.meta.env.BASE_URL}icons/${iconFileName}`,
                 iconSize: [24, 24],
                 iconAnchor: [12, 12],
                 popupAnchor: [0, -12]
