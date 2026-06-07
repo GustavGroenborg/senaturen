@@ -6,7 +6,6 @@ import './CSS/mapControlsStyle.css';
 import './JS/leafletPlugins';
 import { initFacilities } from './JS/geoFAHandling';
 import { createMapControls } from './JS/mapControls';
-import { cookiePopup } from './JS/cookiePopup';
 import { constructFacilityRows } from './JS/menuPane';
 
 // Initialize the app
@@ -25,7 +24,7 @@ function init() {
         let ua = navigator.userAgent.toLowerCase();
 
         if (ua.indexOf('mac os') !== -1 && ua.indexOf('safari') !== -1 && ua.indexOf('iphone') === -1) {
-            alert('This website does not fully support Safari. Features such as viewing information about facilities does not work. For a better experience, please use Mozilla FireFox, Google Chrome or visit this website through your phone.');
+            alert('Denne hjemmeside understøtter ikke Safari fuldt ud. Funktioner såsom visning af information om faciliteter virker ikke. For en bedre oplevelse bedes du bruge Mozilla Firefox, Google Chrome eller besøge siden fra din telefon.');
         }
     })();
 }
