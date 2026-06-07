@@ -98,17 +98,16 @@ export function menuDropDown(menuId: string, dropDownId: string) {
     let dropDownBtn = document.querySelector(dropDownId) as HTMLElement;
     if (!menuEl || !dropDownBtn) return;
 
-    if (getComputedStyle(menuEl).getPropertyValue('display') === 'inline-block') {
+    if (getComputedStyle(menuEl).getPropertyValue('display') !== 'none') {
         // Hiding the menu
         dropDownBtn.style.transform = 'rotate(0deg)';
         menuEl.style.display = 'none';
-        if (menuEl.parentElement) menuEl.parentElement.style.height = 'auto';
     }
     else {
         // Showing the menu
         dropDownBtn.style.transform = 'rotate(-180deg)';
-        menuEl.style.display = 'inline-block';
-        if (menuEl.parentElement) menuEl.parentElement.style.height = '35vh';
+        menuEl.style.display = 'flex';
+        menuEl.style.flexDirection = 'column';
     }
 }
 

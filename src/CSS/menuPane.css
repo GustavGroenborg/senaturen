@@ -108,7 +108,8 @@
     width: 266.85px;
     height: auto;
 
-    align-content: center;
+    display: flex;
+    flex-direction: column;
 
     /* Shadow heavily inspired by example made by w3schools.com link: https://www.w3schools.com/css/css3_shadows.asp */
     box-shadow:  0 0.15em 0.15em 0 rgba(0,0,0,0.2), 0 0.01em 0.3em 0 rgba(0,0,0,0.19) !important;
@@ -118,36 +119,29 @@
 
 .menuPaneHeader {
     width: 100%;
-    height: 3.5em;
+    min-height: 3.5em;
 
     display: flex;
-    align-content: center;
+    align-items: center;
+    justify-content: space-between;
 
-    margin: auto;
+    margin: 0;
 }
 
 
 .menuPaneHeaderChild {
-    flex: 1;
-    margin: 5%;
-
-}
-
-
-.menuPaneHeaderChild:first-child {
-    margin: 5%;
+    margin: 0.5em;
 }
 
 
 .menuPaneHeadline {
-    width: 70%;
-    height: 20%;
+    flex-grow: 1;
 
     text-align: left;
     font-family: "Times New Roman";
     font-size: 150%;
 
-    margin-left: 10%;
+    margin-left: 0.5em;
 }
 
 
@@ -163,7 +157,7 @@
     height: 2em;
 
     display: block;
-    margin: auto;
+    cursor: pointer;
 }
 
 
@@ -173,19 +167,19 @@
 
 
 #coordPaneHeadline {
-    display: block;
-    margin: auto;
-
+    margin: 0;
     padding: 0.5em;
 }
 
 
 #coordListDiv {
     display: none;
-    margin: auto;
+    flex-direction: column;
+    width: 100%;
+    margin-top: 0.5em;
 
-    overflow-y: scroll;
-    height: 75%;
+    overflow-y: auto;
+    max-height: 300px;
 }
 
 
@@ -222,11 +216,12 @@
 
 .coordElContainer {
     display: flex;
-    justify-content: space-around;
-    height: 2em;
+    justify-content: space-between;
+    align-items: center;
+    height: auto;
+    width: 100%;
 
     padding-bottom: .75em;
-    padding-right: .5em;
 }
 
 .coordElContainer:first-child {
@@ -270,12 +265,13 @@
 
 #facilPaneDropDown {
     width: 100%;
-    height: 70%;
+    margin-top: 0.5em;
 
-    overflow-y: scroll;
+    overflow-y: auto;
+    max-height: 400px;
 
     display: none;
-    margin: auto;
+    flex-direction: column;
 }
 
 
