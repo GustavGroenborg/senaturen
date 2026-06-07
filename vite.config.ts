@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: './', // Using relative paths for better compatibility
+  base: '/', // Set to '/' for custom domain (senaturen.dk)
   build: {
     outDir: 'dist',
   },
